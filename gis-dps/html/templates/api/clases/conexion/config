@@ -1,0 +1,9 @@
+{
+    "conexion":{
+    "server": "azr-dps-bd.eastus.cloudapp.azure.com",
+    "user": "user_dps",
+    "password": "Jmie6!Gj*Esa",
+    "database": "iqgis-dps",
+    "port": "3306"
+    }
+}
