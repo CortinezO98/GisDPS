@@ -1,178 +1,250 @@
 <?php
+require_once("/var/www/html/app/functions/microsoft-graph-test.class.php");
+$modulo_plataforma = "Administrador";
+require_once("/var/www/html/iniciador.php");
+require_once("/var/www/html/templates/administrador/modules/guzzle-master/vendor/autoload.php");
 
-    // require '../../assets/plugins/PHPMailer-master/src/Exception.php';
-    // require '../../assets/plugins/PHPMailer-master/src/PHPMailer.php';
-    // require '../../assets/plugins/PHPMailer-master/src/SMTP.php';
+use GuzzleHttp\Client;
+use GuzzleHttp\Exception\RequestException;
+use GuzzleHttp\Psr7\Request;
+
+error_reporting(E_ALL);
+ini_set('display_errors', '0');
+ini_set('log_errors', '1');
+ini_set('date.timezone', 'America/Bogota');
+
+$guzzle = new \GuzzleHttp\Client();
+$mail   = new MicrosoftGraph();
+
+function update_estado_envio(mysqli $db, string $estado, string $marcaTemporal, int $intentos, int $idCorreo): void {
+    $stmt = $db->prepare("
+        UPDATE `gestion_enviosweb_casos_historial`
+        SET `gewch_estado_envio` = ?, `gewch_fecha_envio` = ?, `gewch_intentos` = ?
+        WHERE `gewch_id` = ?
+    ");
+    if ($stmt) {
+        $stmt->bind_param('ssii', $estado, $marcaTemporal, $intentos, $idCorreo);
+        $stmt->execute();
+        $stmt->close();
+    } else {
+        error_log('[noti_web] No se pudo preparar UPDATE: ' . $db->error);
+    }
+}
+
+function path_dentro_de(string $base, string $rel): ?string {
+    $baseReal = rtrim(realpath($base), DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR;
+    $destReal = realpath($base . DIRECTORY_SEPARATOR . ltrim($rel, DIRECTORY_SEPARATOR));
+    if ($destReal !== false && strncmp($destReal, $baseReal, strlen($baseReal)) === 0) {
+        return $destReal;
+    }
+    return null;
+}
 
 
+$consulta_notificaciones = mysqli_query(
+    $enlace_db,
+    "SELECT `gewch_id`, `gewch_radicado`, `gewch_radicado_id`, `gewch_tipo`, `gewch_tipologia`, `gewch_gestion`,
+            `gewch_gestion_detalle`, `gewch_anonimo`, `gewch_publicacion`, `gewch_correo_id`, `gewch_correo_de`,
+            `gewch_correo_de_nombre`, `gewch_correo_para`, `gewch_correo_para_nombre`, `gewch_correo_cc`,
+            `gewch_correo_bcc`, `gewch_correo_fecha`, `gewch_correo_asunto`, `gewch_correo_contenido`,
+            `gewch_embeddedimage_ruta`, `gewch_embeddedimage_nombre`, `gewch_embeddedimage_tipo`,
+            `gewch_attachment_ruta`, `gewch_intentos`, `gewch_estado_envio`, `gewch_fecha_envio`,
+            `gewch_registro_usuario`, `gewch_registro_fecha`,
+            RT.`ncr_host`, RT.`ncr_port`, RT.`ncr_smtpsecure`, RT.`ncr_smtpauth`, RT.`ncr_username`, RT.`ncr_password`,
+            RT.`ncr_setfrom`, RT.`ncr_setfrom_name`, RT.`ncr_tenant`, RT.`ncr_client_id`, RT.`ncr_client_secret`,
+            RT.`ncr_device_code`, RT.`ncr_token`, RT.`ncr_token_refresh`
+     FROM `gestion_enviosweb_casos_historial`
+     LEFT JOIN `administrador_buzones` AS RT
+       ON `gestion_enviosweb_casos_historial`.`gewch_correo_de` = RT.`ncr_id`
+     WHERE `gewch_estado_envio`='Pendiente'
+     ORDER BY `gewch_registro_fecha`
+     LIMIT 12 OFFSET 0"
+);
 
-    require_once("/var/www/html/app/functions/microsoft-graph-test.class.php");
-    $modulo_plataforma="Administrador";
-    require_once("/var/www/html/iniciador.php");
-    require_once("/var/www/html/templates/administrador/modules/guzzle-master/vendor/autoload.php");
-    error_reporting(E_ALL);
-    ini_set('display_errors', '1');
+$resultado_notificaciones = mysqli_fetch_all($consulta_notificaciones);
 
-    use GuzzleHttp\Client;
-    use GuzzleHttp\Exception\RequestException;
-    use GuzzleHttp\Psr7\Request;
+if (count($resultado_notificaciones) > 0) {
+    $consulta_string_adjuntos = "
+        SELECT `gewca_id`, `gewca_historial_id`, `gewca_nombre`, `gewca_ruta`,
+               `gewca_extension`, `gewca_tipo`, `gewca_estado`, `gewca_radicado`, `gewca_radicado_id`
+        FROM `gestion_enviosweb_casos_adjuntos`
+        WHERE `gewca_historial_id` = ? AND `gewca_estado`='Activo'
+        ORDER BY `gewca_id` ASC
+    ";
+    $consulta_registros_adjuntos = $enlace_db->prepare($consulta_string_adjuntos);
 
-    
-    ini_set('date.timezone', 'America/Bogota');
+    for ($i = 0; $i < count($resultado_notificaciones); $i++) {
+        $marca_temporal = date("Y-m-d H:i:s");
 
-    $guzzle = new \GuzzleHttp\Client();
-    $mail = new MicrosoftGraph();
+        $id_correo = (int)$resultado_notificaciones[$i][0];
 
-    //consulta de notificaciones pendientes de enviar
-    $consulta_notificaciones = mysqli_query($enlace_db, "SELECT `gewch_id`, `gewch_radicado`, `gewch_radicado_id`, `gewch_tipo`, `gewch_tipologia`, `gewch_gestion`, `gewch_gestion_detalle`, `gewch_anonimo`, `gewch_publicacion`, `gewch_correo_id`, `gewch_correo_de`, `gewch_correo_de_nombre`, `gewch_correo_para`, `gewch_correo_para_nombre`, `gewch_correo_cc`, `gewch_correo_bcc`, `gewch_correo_fecha`, `gewch_correo_asunto`, `gewch_correo_contenido`, `gewch_embeddedimage_ruta`, `gewch_embeddedimage_nombre`, `gewch_embeddedimage_tipo`, `gewch_attachment_ruta`, `gewch_intentos`, `gewch_estado_envio`, `gewch_fecha_envio`, `gewch_registro_usuario`, `gewch_registro_fecha`, RT.`ncr_host`, RT.`ncr_port`, RT.`ncr_smtpsecure`, RT.`ncr_smtpauth`, RT.`ncr_username`, RT.`ncr_password`, RT.`ncr_setfrom`, RT.`ncr_setfrom_name`, RT.`ncr_tenant`, RT.`ncr_client_id`, RT.`ncr_client_secret`, RT.`ncr_device_code`, RT.`ncr_token`, RT.`ncr_token_refresh` FROM `gestion_enviosweb_casos_historial` LEFT JOIN `administrador_buzones` AS RT ON `gestion_enviosweb_casos_historial`.`gewch_correo_de`=RT.`ncr_id` WHERE `gewch_estado_envio`='Pendiente' ORDER BY `gewch_registro_fecha` LIMIT 12 OFFSET 0");
+        if ($consulta_registros_adjuntos) {
+            $consulta_registros_adjuntos->bind_param("i", $id_correo);
+        }
 
-    $resultado_notificaciones = mysqli_fetch_all($consulta_notificaciones);
 
-    if (count($resultado_notificaciones)>0) {
-        for ($i=0; $i < count($resultado_notificaciones); $i++) {
-            $marca_temporal = date("Y-m-d H:i:s");
-            $id_correo=$resultado_notificaciones[$i][0];
+        $from            = (string)$resultado_notificaciones[$i][35]; 
+        $subject         = (string)$resultado_notificaciones[$i][17];
+        $contenido_html  = (string)$resultado_notificaciones[$i][18];
 
-            $consulta_string_adjuntos="SELECT `gewca_id`, `gewca_historial_id`, `gewca_nombre`, `gewca_ruta`, `gewca_extension`, `gewca_tipo`, `gewca_estado`, `gewca_radicado`, `gewca_radicado_id` FROM `gestion_enviosweb_casos_adjuntos` WHERE `gewca_historial_id`=? AND `gewca_estado`='Activo' ORDER BY `gewca_id` ASC";
-            $consulta_registros_adjuntos = $enlace_db->prepare($consulta_string_adjuntos);
-            $consulta_registros_adjuntos->bind_param("s", $id_correo);
-            
-            if ($resultado_notificaciones[$i][35]!="" AND $resultado_notificaciones[$i][36]!="" AND $resultado_notificaciones[$i][12]!="" AND $resultado_notificaciones[$i][17]!="" AND $resultado_notificaciones[$i][18]!="") {
 
-                try {
-                    $ncr_tenant = $resultado_notificaciones[0][36];
-                    $ncr_client_id = $resultado_notificaciones[0][37];
-                    $ncr_client_secret = $resultado_notificaciones[0][38];
-                    $ncr_device_code = $resultado_notificaciones[0][39];
-                    $ncr_token = $resultado_notificaciones[0][40];
-                    $ncr_token_refresh = $resultado_notificaciones[0][41];
+        $ncr_tenant        = (string)$resultado_notificaciones[$i][36];
+        $ncr_client_id     = (string)$resultado_notificaciones[$i][37];
+        $ncr_client_secret = (string)$resultado_notificaciones[$i][38];
+        $ncr_device_code   = (string)$resultado_notificaciones[$i][39];
+        $ncr_token         = (string)$resultado_notificaciones[$i][40];
+        $ncr_token_refresh = (string)$resultado_notificaciones[$i][41];
 
-                    $mail->tenant = $ncr_tenant;
-                    $mail->client_id = $ncr_client_id;
-                    $mail->client_secret = $ncr_client_secret;
-                    $mail->redirect_uri = 'https://dps.iq-online.net.co';
-                    $mail->auth_code=$ncr_device_code;
-                    $mail->token=$ncr_token;
-                    $mail->token_refresh=$ncr_token_refresh;
 
-                    $num_intentos=intval($resultado_notificaciones[$i][23])+1;
+        if ($from !== "" && $subject !== "" && $contenido_html !== "" && $ncr_tenant !== "" && $ncr_client_id !== "") {
+            try {
+                $mail->tenant        = $ncr_tenant;
+                $mail->client_id     = $ncr_client_id;
+                $mail->client_secret = $ncr_client_secret;
+                $mail->redirect_uri  = 'https://portalkiosko.asdcloud.co'; 
+                $mail->auth_code     = $ncr_device_code;
+                $mail->token         = $ncr_token;
+                $mail->token_refresh = $ncr_token_refresh;
 
-                    if ($num_intentos>=2) {
-                        $estado_error="Error";
-                    } else {
-                        $estado_error="Pendiente";
+                $num_intentos = (int)$resultado_notificaciones[$i][23] + 1;
+                $estado_error = ($num_intentos >= 2) ? "Error" : "Pendiente";
+
+                $toRecipients  = [];
+                $ccRecipients  = [];
+                $bccRecipients = [];
+
+                $destino_to  = array_filter(explode(";", (string)$resultado_notificaciones[$i][12]));
+                foreach ($destino_to as $addr) {
+                    $addr = trim($addr);
+                    if ($addr !== "") {
+                        $toRecipients[]['emailAddress'] = ['address' => $addr];
                     }
+                }
 
-                    $control_destinatario=0;
-                    $destino_to=explode(";", $resultado_notificaciones[$i][12]);
-                    $toRecipients=array();
-                    for ($j=0; $j < count($destino_to); $j++) { 
-                        if ($destino_to[$j]!="") {
-                            $control_destinatario++;
-                            $toRecipients[]['emailAddress'] = ['address' => $destino_to[$j]];
+                $destino_cc = array_filter(explode(";", (string)$resultado_notificaciones[$i][14]));
+                foreach ($destino_cc as $addr) {
+                    $addr = trim($addr);
+                    if ($addr !== "") {
+                        $ccRecipients[]['emailAddress'] = ['address' => $addr];
+                    }
+                }
+
+                $destino_bcc = array_filter(explode(";", (string)$resultado_notificaciones[$i][15]));
+                foreach ($destino_bcc as $addr) {
+                    $addr = trim($addr);
+                    if ($addr !== "") {
+                        $bccRecipients[]['emailAddress'] = ['address' => $addr];
+                    }
+                }
+
+
+                $attachments = [];
+                $img_base = '/var/www/html/'; 
+                $image_embedded_ruta   = explode(";", (string)$resultado_notificaciones[$i][19]);
+                $image_embedded_nombre = explode(";", (string)$resultado_notificaciones[$i][20]);
+                $image_embedded_tipo   = explode(";", (string)$resultado_notificaciones[$i][21]);
+
+                $count_imgs = max(count($image_embedded_ruta), count($image_embedded_nombre), count($image_embedded_tipo));
+                for ($j = 0; $j < $count_imgs; $j++) {
+                    $rutaImg   = $image_embedded_ruta[$j]   ?? '';
+                    $nombreImg = $image_embedded_nombre[$j] ?? '';
+                    $tipoImg   = $image_embedded_tipo[$j]   ?? '';
+                    if ($rutaImg !== "" && $nombreImg !== "" && $tipoImg !== "") {
+                        $rutaReal = path_dentro_de($img_base, $rutaImg);
+                        if ($rutaReal && is_file($rutaReal)) {
+                            $attachments[] = [
+                                '@odata.type'  => '#microsoft.graph.fileAttachment',
+                                'Name'         => $nombreImg,
+                                'ContentBytes' => base64_encode(file_get_contents($rutaReal)),
+                                'ContentType'  => mime_content_type($rutaReal),
+                                'ContentId'    => $nombreImg
+                            ];
                         }
                     }
+                }
 
-
-                    $destino_cc=explode(";", $resultado_notificaciones[$i][14]);
-                    $ccRecipients=array();
-                    for ($j=0; $j < count($destino_cc); $j++) { 
-                        if ($destino_cc[$j]!="") {
-                            $ccRecipients[]['emailAddress'] = ['address' => $destino_cc[$j]];
-                        }
-                    }
-
-                    $destino_bcc=explode(";", $resultado_notificaciones[$i][15]);
-                    $bccRecipients=array();
-                    for ($j=0; $j < count($destino_bcc); $j++) { 
-                        if ($destino_bcc[$j]!="") {
-                            $bccRecipients[]['emailAddress'] = ['address' => $destino_bcc[$j]];
-                        }
-                    }
-
-                    //embeddedimage
-                    $image_embedded_ruta=explode(";", $resultado_notificaciones[$i][19]);
-                    $image_embedded_nombre=explode(";", $resultado_notificaciones[$i][20]);
-                    $image_embedded_tipo=explode(";", $resultado_notificaciones[$i][21]);
-                    $attachments=array();
-                    for ($j=0; $j < count($image_embedded_ruta); $j++) { 
-                        if ($image_embedded_ruta[$j]!="" AND $image_embedded_nombre[$j]!="" AND $image_embedded_tipo[$j]!="") {
-                            $attachments[]=array('@odata.type' => '#microsoft.graph.fileAttachment',
-                                            'Name' => $image_embedded_nombre[$j],
-                                            'ContentBytes' => base64_encode(file_get_contents($image_embedded_ruta[$j])),
-                                            'ContentType' => mime_content_type($image_embedded_ruta[$j]),
-                                            'ContentId' => $image_embedded_nombre[$j]);
-                        }
-                    }
-
-
-                    // CONSULTA ADJUNTOS DEL HISTORIAL DE GESTIÓN
+                $resultado_registros_adjuntos = [];
+                if ($consulta_registros_adjuntos) {
                     $consulta_registros_adjuntos->execute();
                     $resultado_registros_adjuntos = $consulta_registros_adjuntos->get_result()->fetch_all(MYSQLI_NUM);
+                }
 
-                    
-                    if (count($resultado_registros_adjuntos)>0) {
-                        for ($j=0; $j < count($resultado_registros_adjuntos); $j++) { 
-                            if ($resultado_registros_adjuntos[$j][3]!="") {
-                                $ruta_final='/var/www/html/templates/envios_web/'.$resultado_registros_adjuntos[$j][3];
-                                $nombre_final=$resultado_registros_adjuntos[$j][2];
-                                if (file_exists($ruta_final)) {
-                                    $attachments[]=array('@odata.type' => '#microsoft.graph.fileAttachment',
-                                                    'Name' => $nombre_final,
-                                                    'ContentBytes' => base64_encode(file_get_contents($ruta_final)),
-                                                    'ContentType' => mime_content_type($ruta_final));
-                                }
+                if (count($resultado_registros_adjuntos) > 0) {
+                    $base_adj = '/var/www/html/templates/envios_web/';
+                    foreach ($resultado_registros_adjuntos as $adj) {
+                        $rutaRel = (string)$adj[3];
+                        $nombre_final = (string)$adj[2];
+                        if ($rutaRel !== "") {
+                            $ruta_final = path_dentro_de($base_adj, $rutaRel);
+                            if ($ruta_final && file_exists($ruta_final)) {
+                                $attachments[] = [
+                                    '@odata.type'  => '#microsoft.graph.fileAttachment',
+                                    'Name'         => $nombre_final,
+                                    'ContentBytes' => base64_encode(file_get_contents($ruta_final)),
+                                    'ContentType'  => mime_content_type($ruta_final)
+                                ];
                             }
                         }
                     }
-                    
-                    $from=$resultado_notificaciones[$i][35];
-                    $subject=$resultado_notificaciones[$i][17];
-
-                    $contenido_correo=str_replace('https://dps.iq-online.net.co/assets/images/logo_cliente_notificacion_2.png', 'cid:logo_cliente_notificacion', $resultado_notificaciones[$i][18]);
-                    $contenido_correo=str_replace('https://dps.iq-online.net.co/assets/images/logo_certificacion_notificacion_2.png', 'cid:logo_certificacion_notificacion', $contenido_correo);
-                    $contenido_correo= '<div style="width: 500px !important; max-width: 500px !important;">'.$contenido_correo.'</div>';
-
-                    $body=[
-                        'contentType' => 'html',
-                        'content' => $contenido_correo
-                    ];
-
-                    $resultado_envio = $mail->mail_send($guzzle, $from, $subject, $body, $toRecipients, $ccRecipients, $bccRecipients, $attachments);
-
-                    if ($resultado_envio=='') {
-                        $estado_final='Enviado';
-                        $consulta_notificaciones_update = mysqli_query($enlace_db, "UPDATE `gestion_enviosweb_casos_historial` SET `gewch_estado_envio`='Enviado', `gewch_fecha_envio`='".$marca_temporal."', `gewch_intentos`='".$num_intentos."' WHERE `gewch_id`='".$id_correo."'");
-                    } elseif ($resultado_envio=='401') {
-                        $estado_final='Error de autenticación';
-                        $consulta_notificaciones_update = mysqli_query($enlace_db, "UPDATE `gestion_enviosweb_casos_historial` SET `gewch_estado_envio`='".$estado_final."', `gewch_fecha_envio`='".$marca_temporal."', `gewch_intentos`='".$num_intentos."' WHERE `gewch_id`='".$id_correo."'");
-                    } elseif ($resultado_envio=='400') {
-                        $estado_final='Error-estructura-envío';
-                        $consulta_notificaciones_update = mysqli_query($enlace_db, "UPDATE `gestion_enviosweb_casos_historial` SET `gewch_estado_envio`='".$estado_final."', `gewch_fecha_envio`='".$marca_temporal."', `gewch_intentos`='".$num_intentos."' WHERE `gewch_id`='".$id_correo."'");
-                    }
-                }  catch (Exception $e) {
-                    $reporte_error="";
-                    $estado_error_final="";
-                    $reporte_error=$e->getMessage(); // error messages from anything else!
-                    //Validación excepciones
-                    settype($reporte_error, 'string');
-                    if (stristr($reporte_error, 'Invalid address:')) {
-                        $estado_error_final='Destinatario inválido';
-                    } elseif ($reporte_error=='SMTP Error: Could not authenticate.') {
-                        $estado_error_final='Error de autenticación';
-                    } elseif ($reporte_error=='You must provide at least one recipient email address.') {
-                        $estado_error_final='Sin destinatario';
-                    }
-
-                    // echo $reporte_error;
-
-                    // if ($estado_error_final!="") {
-                    //     $consulta_notificaciones_update = mysqli_query($enlace_db, "UPDATE `gestion_enviosweb_casos_historial` SET `gewch_estado_envio`='".$estado_error_final."', `gewch_fecha_envio`='".$marca_temporal."', `gewch_intentos`='".$num_intentos."' WHERE `gewch_id`='".$id_correo."'");
-                    // }
                 }
-            } else {
-                $consulta_notificaciones_update = mysqli_query($enlace_db, "UPDATE `gestion_enviosweb_casos_historial` SET `gewch_estado_envio`='Error-estructura', `gewch_fecha_envio`='".$marca_temporal."', `gewch_intentos`='1' WHERE `gewch_id`='".$id_correo."'");
+
+
+                $contenido_correo = str_replace(
+                    'https://portalkiosko.asdcloud.co/templates/assets/images/logo_cliente_notificacion_2.png',
+                    'cid:logo_cliente_notificacion',
+                    $contenido_html
+                );
+                $contenido_correo = str_replace(
+                    'https://portalkiosko.asdcloud.co/templates/assets/images/logo_certificacion_notificacion_2.png',
+                    'cid:logo_certificacion_notificacion',
+                    $contenido_correo
+                );
+                $contenido_correo = '<div style="width: 500px !important; max-width: 500px !important;">' . $contenido_correo . '</div>';
+
+                $body = [
+                    'contentType' => 'html',
+                    'content'     => $contenido_correo
+                ];
+
+                $resultado_envio = $mail->mail_send($guzzle, $from, $subject, $body, $toRecipients, $ccRecipients, $bccRecipients, $attachments);
+
+                if ($resultado_envio === '') {
+                    update_estado_envio($enlace_db, 'Enviado', $marca_temporal, $num_intentos, $id_correo);
+                } elseif ($resultado_envio === '401') {
+                    update_estado_envio($enlace_db, 'Error de autenticación', $marca_temporal, $num_intentos, $id_correo);
+                } elseif ($resultado_envio === '400') {
+                    update_estado_envio($enlace_db, 'Error-estructura-envío', $marca_temporal, $num_intentos, $id_correo);
+                } else {
+                    update_estado_envio($enlace_db, 'Error', $marca_temporal, $num_intentos, $id_correo);
+                    error_log('[noti_web] Error genérico envío ID ' . $id_correo . ': ' . print_r($resultado_envio, true));
+                }
+
+            } catch (Exception $e) {
+                $reporte_error = (string)$e->getMessage();
+                $estado_error_final = '';
+
+                if (stripos($reporte_error, 'Invalid address:') !== false) {
+                    $estado_error_final = 'Destinatario inválido';
+                } elseif ($reporte_error === 'SMTP Error: Could not authenticate.') {
+                    $estado_error_final = 'Error de autenticación';
+                } elseif ($reporte_error === 'You must provide at least one recipient email address.') {
+                    $estado_error_final = 'Sin destinatario';
+                } else {
+                    $estado_error_final = 'Error';
+                }
+
+                $num_intentos = (int)$resultado_notificaciones[$i][23] + 1;
+                update_estado_envio($enlace_db, $estado_error_final, $marca_temporal, $num_intentos, $id_correo);
+                error_log('[noti_web] Excepción ID ' . $id_correo . ': ' . $reporte_error);
             }
+
+        } else {
+            update_estado_envio($enlace_db, 'Error-estructura', $marca_temporal, 1, $id_correo);
         }
     }
+
+    if ($consulta_registros_adjuntos) {
+        $consulta_registros_adjuntos->close();
+    }
+}
 ?>
