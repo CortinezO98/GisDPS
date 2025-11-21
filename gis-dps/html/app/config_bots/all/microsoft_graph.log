@@ -1,3 +1,0 @@
-PHP Warning:  session_start(): Session cannot be started after headers have already been sent in /var/www/html/iniciador.php on line 3
-PHP Notice:  Only variables should be passed by reference in /var/www/html/app/config_bots/all/microsoft_graph.php on line 97
-PHP Notice:  Only variables should be passed by reference in /var/www/html/app/config_bots/all/microsoft_graph.php on line 97
