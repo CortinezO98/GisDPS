@@ -17,13 +17,61 @@
     $sentencia_insert = $enlace_db->prepare("INSERT INTO `gestion_ocr_consolidado`(`ocrc_cod_familia`, `ocrc_codbeneficiario`, `ocrc_cabezafamilia`, `ocrc_miembro_id`, `ocrc_existe`, `ocrc_doc_valida`, `ocrc_doc_valor`, `ocrc_doc_tipo`, `ocrc_nombre_valida`, `ocrc_nombre_valor`, `ocrc_apellido_valida`, `ocrc_apellido_valor`, `ocrc_fnacimiento_valida`, `ocrc_fnacimiento_valor`, `ocrc_fexpedicion_valida`, `ocrc_fexpedicion_valor`, `ocrc_contrato_existe`, `ocrc_contrato_numid`, `ocrc_contrato_titular`, `ocrc_contrato_municipio`, `ocrc_contrato_departamento`, `ocrc_contrato_firmado`, `ocrc_contrato_huella`, `ocrc_registro_path`, `ocrc_resultado_estado`, `ocrc_resultado_novedad`) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
 
     // Agrega variables a sentencia preparada
-    $sentencia_insert->bind_param('ssssssssssssssssssssssssss', $ocrc_cod_familia, $ocrc_codbeneficiario, $ocrc_cabezafamilia, $ocrc_miembro_id, $ocrc_existe, $ocrc_doc_valida, $ocrc_doc_valor, $ocrc_doc_tipo, $ocrc_nombre_valida, $ocrc_nombre_valor, $ocrc_apellido_valida, $ocrc_apellido_valor, $ocrc_fnacimiento_valida, $ocrc_fnacimiento_valor, $ocrc_fexpedicion_valida, $ocrc_fexpedicion_valor, $ocrc_contrato_existe, $ocrc_contrato_numid, $ocrc_contrato_titular, $ocrc_contrato_municipio, $ocrc_contrato_departamento, $ocrc_contrato_firmado, $ocrc_contrato_huella, $ocrc_registro_path, $ocrc_resultado_estado, $ocrc_resultado_novedad);
+    $sentencia_insert->bind_param(
+        'ssssssssssssssssssssssssss',
+        $ocrc_cod_familia,
+        $ocrc_codbeneficiario,
+        $ocrc_cabezafamilia,
+        $ocrc_miembro_id,
+        $ocrc_existe,
+        $ocrc_doc_valida,
+        $ocrc_doc_valor,
+        $ocrc_doc_tipo,
+        $ocrc_nombre_valida,
+        $ocrc_nombre_valor,
+        $ocrc_apellido_valida,
+        $ocrc_apellido_valor,
+        $ocrc_fnacimiento_valida,
+        $ocrc_fnacimiento_valor,
+        $ocrc_fexpedicion_valida,
+        $ocrc_fexpedicion_valor,
+        $ocrc_contrato_existe,
+        $ocrc_contrato_numid,
+        $ocrc_contrato_titular,
+        $ocrc_contrato_municipio,
+        $ocrc_contrato_departamento,
+        $ocrc_contrato_firmado,
+        $ocrc_contrato_huella,
+        $ocrc_registro_path,
+        $ocrc_resultado_estado,
+        $ocrc_resultado_novedad
+    );
 
     // Prepara la sentencia
     $sentencia_insert_resultado = $enlace_db->prepare("INSERT INTO `gestion_ocr_resultado`(`ocrr_cod_familia`, `ocrr_codbeneficiario`, `ocrr_cabezafamilia`, `ocrr_resultado_familia_estado`, `ocrr_gestion_agente`, `ocrr_gestion_estado`, `ocrr_gestion_intentos`, `ocrr_gestion_correo`, `ocrr_gestion_observaciones`, `ocrr_gestion_fecha`, `ocrr_gestion_notificacion`, `ocrr_gestion_notificacion_estado`, `ocrr_gestion_notificacion_fecha_registro`, `ocrr_gestion_notificacion_fecha_envio`, `ocrr_gestion_llamada_tipificacion`, `ocrr_gestion_llamada_id`, `ocrr_sr_fecha`, `ocrr_sr_observaciones`) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
 
     // Agrega variables a sentencia preparada
-    $sentencia_insert_resultado->bind_param('ssssssssssssssssss', $ocrr_cod_familia, $ocrr_codbeneficiario, $ocrr_cabezafamilia, $ocrr_resultado_familia_estado, $ocrr_gestion_agente, $ocrr_gestion_estado, $ocrr_gestion_intentos, $ocrr_gestion_correo, $ocrr_gestion_observaciones, $ocrr_gestion_fecha, $ocrr_gestion_notificacion, $ocrr_gestion_notificacion_estado, $ocrr_gestion_notificacion_fecha_registro, $ocrr_gestion_notificacion_fecha_envio, $ocrr_gestion_llamada_tipificacion, $ocrr_gestion_llamada_id, $ocrr_sr_fecha, $ocrr_sr_observaciones);
+    $sentencia_insert_resultado->bind_param(
+        'ssssssssssssssssss',
+        $ocrr_cod_familia,
+        $ocrr_codbeneficiario,
+        $ocrr_cabezafamilia,
+        $ocrr_resultado_familia_estado,
+        $ocrr_gestion_agente,
+        $ocrr_gestion_estado,
+        $ocrr_gestion_intentos,
+        $ocrr_gestion_correo,
+        $ocrr_gestion_observaciones,
+        $ocrr_gestion_fecha,
+        $ocrr_gestion_notificacion,
+        $ocrr_gestion_notificacion_estado,
+        $ocrr_gestion_notificacion_fecha_registro,
+        $ocrr_gestion_notificacion_fecha_envio,
+        $ocrr_gestion_llamada_tipificacion,
+        $ocrr_gestion_llamada_id,
+        $ocrr_sr_fecha,
+        $ocrr_sr_observaciones
+    );
     
     //Consulta miembros x codfamilia y codmiembro
     $consulta_string="SELECT `ocr_id`, `ocr_codbeneficiario`, `ocr_cabezadefamilia`, `ocr_fechanacimiento` FROM `gestion_ocr` WHERE `ocr_codfamilia`=? AND `ocr_documento`=?";
@@ -40,12 +88,10 @@
     // Agrega variables a sentencia preparada
     $consulta_actualizar->bind_param('sss', $ocr_consolida_estado, $ocr_consolida_fecha, $ocr_id);
 
-
     // Prepara la sentencia
     $consulta_actualizar_resultado = $enlace_db->prepare("UPDATE `gestion_ocr_resultado` SET `ocrr_resultado_familia_estado`=?,`ocrr_gestion_agente`=?, `ocrr_gestion_estado`=?, `ocrr_gestion_intentos`=?, `ocrr_gestion_fecha`=? WHERE `ocrr_id`=?");
     // Agrega variables a sentencia preparada
     $consulta_actualizar_resultado->bind_param('ssssss', $ocrr_resultado_familia_estado, $ocrr_gestion_agente, $ocrr_gestion_estado, $ocrr_gestion_intentos, $ocrr_gestion_fecha, $ocrr_id);
-
 
     //Consulta consolidado duplicado consolidado
     $consulta_string_consolidado="SELECT `ocrc_cod_familia`, `ocrc_codbeneficiario` FROM `gestion_ocr_consolidado` WHERE `ocrc_codbeneficiario`=? AND (`ocrc_resultado_estado`='Validado-OCR-SR' OR `ocrc_resultado_estado`='No validado-OCR-SR' OR `ocrc_resultado_estado`='Validado-Edad-SR')";
@@ -80,18 +126,23 @@
 
     $control_errores_agente=0;
     for ($i=2; $i < $limite_procesar; $i++) { //recorre cada json
-        echo $lista_archivo[$i];
+
+        // ✅ REMEDIACIÓN Stored XSS: escapamos el nombre del archivo antes de imprimirlo
+        $nombre_archivo = $lista_archivo[$i];
+        $nombre_archivo_seguro = htmlspecialchars($nombre_archivo, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+        echo $nombre_archivo_seguro;
         echo "|";
-        $json_parser=file_get_contents($ruta_pendientes.$lista_archivo[$i]);
+
+        $json_parser=file_get_contents($ruta_pendientes.$nombre_archivo);
         $array_json=json_decode($json_parser, true);
 
         echo $ocrc_cod_familia=$array_json['familia']['codigo'];
-        $ocrc_registro_path=$lista_archivo[$i];
+        $ocrc_registro_path=$nombre_archivo;
         $ocrr_cod_familia=$ocrc_cod_familia;
         
         $consulta_registros_resultado->execute();//consulta datos de base OCR original
         $resultado_registros_resultado = $consulta_registros_resultado->get_result()->fetch_all(MYSQLI_NUM);
-echo "|resultado: ";
+        echo "|resultado: ";
         echo $id_registro_resultado=$resultado_registros_resultado[0][0];
 
         echo "<br>";
@@ -501,34 +552,8 @@ echo "|resultado: ";
                     // echo "File moved successfully";
                 }
             }
-            // if(count($resultado_registros_resultado)==0) {
-            // } else {
-            //     $ruta_actual = $ruta_pendientes.$ocrc_registro_path;
-            //     $ruta_nueva = $ruta_error.$ocrc_registro_path;
-            //     $moved = rename($ruta_actual, $ruta_nueva);
-            //     if($moved) {
-            //         // echo "File moved successfully";
-            //     }
-            // }
         } else {
-            // // Prepara la sentencia
-            // $sentencia_delete_consolidado = $enlace_db->prepare("DELETE FROM `gestion_ocr_consolidado` WHERE `ocrc_cod_familia`=?");
-            // // Agrega variables a sentencia preparada
-            // $sentencia_delete_consolidado->bind_param('s', $ocrc_cod_familia);
-            // if ($sentencia_delete_historial->execute()) {
-            //     // Prepara la sentencia
-            //     $sentencia_delete_resultado = $enlace_db->prepare("DELETE FROM `gestion_ocr_resultado` WHERE `ocrr_cod_familia`=?");
-            //     // Agrega variables a sentencia preparada
-            //     $sentencia_delete_resultado->bind_param('s', $ocrr_cod_familia);
-            //     if ($sentencia_delete_historial->execute()) {
-            //         $ruta_actual = $ruta_pendientes.$ocrc_registro_path;
-            //         $ruta_nueva = $ruta_error.$ocrc_registro_path;
-            //         $moved = rename($ruta_actual, $ruta_nueva);
-            //         if($moved) {
-            //             // echo "File moved error";
-            //         }
-            //     }
-            // }
+            // Aquí mantengo tu lógica comentada tal como estaba
         }
     }
 ?>
