@@ -16,8 +16,6 @@ use function sprintf;
 use function trigger_error;
 
 use const E_USER_ERROR;
-use const E_USER_WARNING;
-use const PHP_VERSION_ID;
 
 /**
  * Node factory - instantiates Node objects or objects derived from the Node class
@@ -45,7 +43,7 @@ class NodeFactory
                     __('Invalid class name "%1$s", using default of "Node"'),
                     $class
                 ),
-                PHP_VERSION_ID < 80400 ? E_USER_ERROR : E_USER_WARNING
+                E_USER_ERROR
             );
         }
 
@@ -75,7 +73,7 @@ class NodeFactory
                     __('Could not load class "%1$s"'),
                     $class
                 ),
-                PHP_VERSION_ID < 80400 ? E_USER_ERROR : E_USER_WARNING
+                E_USER_ERROR
             );
         }
 

@@ -1125,7 +1125,7 @@ class DatabaseInterface implements DbalInterface
         /* Locale for messages */
         $locale = LanguageManager::getInstance()->getCurrentLanguage()->getMySQLLocale();
         if ($locale) {
-            $this->tryQuery("SET lc_messages = '" . $locale . "';");
+            $this->query("SET lc_messages = '" . $locale . "';");
         }
 
         // Set timezone for the session, if required.
@@ -1794,10 +1794,8 @@ class DatabaseInterface implements DbalInterface
             return $hasGrantPrivilege;
         }
 
-        $collation = $this->getServerCollation();
-
         [$user, $host] = $this->getCurrentUserAndHost();
-        $query = QueryGenerator::getInformationSchemaDataForGranteeRequest($user, $host, $collation);
+        $query = QueryGenerator::getInformationSchemaDataForGranteeRequest($user, $host);
         $result = $this->tryQuery($query);
 
         if ($result) {
@@ -1806,7 +1804,7 @@ class DatabaseInterface implements DbalInterface
 
         if (! $hasGrantPrivilege) {
             foreach ($this->getCurrentRolesAndHost() as [$role, $roleHost]) {
-                $query = QueryGenerator::getInformationSchemaDataForGranteeRequest($role, $roleHost ?? '', $collation);
+                $query = QueryGenerator::getInformationSchemaDataForGranteeRequest($role, $roleHost ?? '');
                 $result = $this->tryQuery($query);
 
                 if ($result) {
@@ -1853,10 +1851,8 @@ class DatabaseInterface implements DbalInterface
             return $hasCreatePrivilege;
         }
 
-        $collation = $this->getServerCollation();
-
         [$user, $host] = $this->getCurrentUserAndHost();
-        $query = QueryGenerator::getInformationSchemaDataForCreateRequest($user, $host, $collation);
+        $query = QueryGenerator::getInformationSchemaDataForCreateRequest($user, $host);
         $result = $this->tryQuery($query);
 
         if ($result) {
@@ -1865,7 +1861,7 @@ class DatabaseInterface implements DbalInterface
 
         if (! $hasCreatePrivilege) {
             foreach ($this->getCurrentRolesAndHost() as [$role, $roleHost]) {
-                $query = QueryGenerator::getInformationSchemaDataForCreateRequest($role, $roleHost ?? '', $collation);
+                $query = QueryGenerator::getInformationSchemaDataForCreateRequest($role, $roleHost ?? '');
                 $result = $this->tryQuery($query);
 
                 if ($result) {

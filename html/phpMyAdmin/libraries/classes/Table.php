@@ -1555,8 +1555,8 @@ class Table implements Stringable
 
         $this->messages[] = sprintf(
             __('Table %1$s has been renamed to %2$s.'),
-            $oldName,
-            $newName
+            htmlspecialchars($oldName),
+            htmlspecialchars($newName)
         );
 
         return true;
@@ -2241,11 +2241,7 @@ class Table implements Stringable
             $masterField = $multiEditColumnsName[$masterFieldMd5];
             $foreignTable = $destinationTable[$masterFieldMd5];
             $foreignField = $destinationColumn[$masterFieldMd5];
-            if (
-                $foreignDb !== ''
-                && $foreignTable !== '' && $foreignTable !== null
-                && $foreignField !== '' && $foreignField !== null
-            ) {
+            if (! empty($foreignDb) && ! empty($foreignTable) && ! empty($foreignField)) {
                 if (! isset($existrel[$masterField])) {
                     $updQuery = 'INSERT INTO '
                         . Util::backquote($relationFeature->database)
@@ -2349,20 +2345,20 @@ class Table implements Stringable
             $emptyFields = false;
             foreach ($masterField as $key => $oneField) {
                 if (
-                    ($oneField !== '' && (! isset($foreignField[$key]) || $foreignField[$key] === ''))
-                    || ($oneField === '' && (isset($foreignField[$key]) && $foreignField[$key] !== ''))
+                    (! empty($oneField) && empty($foreignField[$key]))
+                    || (empty($oneField) && ! empty($foreignField[$key]))
                 ) {
                     $emptyFields = true;
                 }
 
-                if ($oneField !== '' || (isset($foreignField[$key]) && $foreignField[$key] !== '')) {
+                if (! empty($oneField) || ! empty($foreignField[$key])) {
                     continue;
                 }
 
                 unset($masterField[$key], $foreignField[$key]);
             }
 
-            if ($foreignDb !== '' && $foreignTable !== '' && ! $emptyFields) {
+            if (! empty($foreignDb) && ! empty($foreignTable) && ! $emptyFields) {
                 if (isset($existrelForeign[$masterFieldMd5])) {
                     $constraintName = $existrelForeign[$masterFieldMd5]['constraint'];
                     $onDelete = ! empty(
@@ -2470,8 +2466,8 @@ class Table implements Stringable
             $sqlQueryRecreate = '# Restoring the dropped constraint...' . "\n";
             $sqlQueryRecreate .= $this->getSQLToCreateForeignKey(
                 $table,
-                $existrelForeign[$masterFieldMd5]['index_list'],
-                $existrelForeign[$masterFieldMd5]['ref_db_name'] ?? $GLOBALS['db'],
+                $masterField,
+                $existrelForeign[$masterFieldMd5]['ref_db_name'],
                 $existrelForeign[$masterFieldMd5]['ref_table_name'],
                 $existrelForeign[$masterFieldMd5]['ref_index_list'],
                 $existrelForeign[$masterFieldMd5]['constraint'],

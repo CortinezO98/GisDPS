@@ -15,7 +15,6 @@ use TCPDF;
 
 use function __;
 use function class_exists;
-use function extension_loaded;
 
 /**
  * Produce a PDF report (export) from a query
@@ -333,6 +332,6 @@ class ExportPdf extends ExportPlugin
 
     public static function isAvailable(): bool
     {
-        return class_exists(TCPDF::class) && extension_loaded('curl');
+        return class_exists(TCPDF::class);
     }
 }

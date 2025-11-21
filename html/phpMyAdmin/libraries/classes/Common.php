@@ -45,8 +45,6 @@ use function trigger_error;
 use function urldecode;
 
 use const E_USER_ERROR;
-use const E_USER_WARNING;
-use const PHP_VERSION_ID;
 
 final class Common
 {
@@ -499,7 +497,7 @@ final class Common
                 __(
                     'Failed to set session cookie. Maybe you are using HTTP instead of HTTPS to access phpMyAdmin.'
                 ),
-                PHP_VERSION_ID < 80400 ? E_USER_ERROR : E_USER_WARNING
+                E_USER_ERROR
             );
         }
 

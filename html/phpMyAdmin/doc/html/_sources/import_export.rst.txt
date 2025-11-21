@@ -194,7 +194,7 @@ Sample output:
 
     [
         {
-            "comment": "Export to JSON plugin for phpMyAdmin",
+            "comment": "Export to JSON plugin for PHPMyAdmin",
             "type": "header",
             "version": "4.7.0-dev"
         },

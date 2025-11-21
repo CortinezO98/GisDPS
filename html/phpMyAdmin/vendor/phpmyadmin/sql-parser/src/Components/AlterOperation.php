@@ -146,8 +146,6 @@ class AlterOperation extends Component
             2,
             'var',
         ],
-        'UNIQUE' => 2,
-        'UNIQUE KEY' => 2,
 
         'CHARACTER SET' => 3,
         'TO' => [

@@ -156,18 +156,20 @@ class Partition extends SubPartition
                 $partitionMap = [];
                 /** @var array $row */
                 foreach ($result as $row) {
-                    if (empty($row['PARTITION_NAME'])) {
-                        continue;
+                    if (isset($partitionMap[$row['PARTITION_NAME']])) {
+                        $partition = $partitionMap[$row['PARTITION_NAME']];
+                    } else {
+                        $partition = new Partition($row);
+                        $partitionMap[$row['PARTITION_NAME']] = $partition;
                     }
-
-                    $partition = $partitionMap[$row['PARTITION_NAME']] ?? new Partition($row);
-                    $partitionMap[$row['PARTITION_NAME']] = $partition;
 
                     if (empty($row['SUBPARTITION_NAME'])) {
                         continue;
                     }
 
-                    $partition->addSubPartition(new SubPartition($row));
+                    $parentPartition = $partition;
+                    $partition = new SubPartition($row);
+                    $parentPartition->addSubPartition($partition);
                 }
 
                 return array_values($partitionMap);

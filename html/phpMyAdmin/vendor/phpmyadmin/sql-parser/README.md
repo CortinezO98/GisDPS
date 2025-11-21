@@ -124,7 +124,7 @@ LC_ALL=pl ./vendor/bin/lint-query --query "SELECT 1"
 ```php
 require __DIR__ . '/vendor/autoload.php';
 
-PhpMyAdmin\SqlParser\Translator::setLocale('pl');
+$GLOBALS['lang'] = 'pl';
 
 $query1 = 'select * from a';
 $parser = new PhpMyAdmin\SqlParser\Parser($query1);

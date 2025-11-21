@@ -19,8 +19,6 @@ use function uasort;
 use function ucfirst;
 
 use const E_USER_ERROR;
-use const E_USER_WARNING;
-use const PHP_VERSION_ID;
 
 /**
  * Language selection manager
@@ -69,7 +67,6 @@ class LanguageManager
             'ar[_-]ly|arabic (libya)|libian arabic',
             'ar_LY',
         ],
-        'ast' => ['ast', 'Asturian', 'Asturianu', 'ast|asturian', ''],
         'az' => [
             'az',
             'Azerbaijani',
@@ -980,7 +977,7 @@ class LanguageManager
 
         trigger_error(
             __('Ignoring unsupported language code.'),
-            PHP_VERSION_ID < 80400 ? E_USER_ERROR : E_USER_WARNING
+            E_USER_ERROR
         );
     }
 }

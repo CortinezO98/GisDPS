@@ -23,7 +23,6 @@ use Twig\Node\Expression\ConstantExpression;
 use Twig\Node\Expression\FilterExpression;
 use Twig\Node\Expression\NameExpression;
 use Twig\Node\Expression\TempNameExpression;
-use Twig\Node\Expression\Variable\ContextVariable;
 use Twig\Node\Node;
 use Twig\Node\PrintNode;
 use Twig\Node\TextNode;
@@ -103,12 +102,13 @@ class TransNode extends Node
         }
 
         /** @phpstan-ignore-next-line */
-        if (Environment::MAJOR_VERSION >= 3 && Environment::MINOR_VERSION >= 12) {
+        if (Environment::VERSION_ID >= 31300 || Environment::VERSION_ID >= 301200) {
             parent::__construct($nodes, [], $lineno);
 
             return;
         }
 
+        /** @phpstan-ignore-next-line */
         parent::__construct($nodes, [], $lineno, $tag);
     }
 
@@ -146,7 +146,7 @@ class TransNode extends Node
 
         if ($vars) {
             $compiler
-                ->raw(self::echoOrYield() . ' strtr(' . $function . '(');
+                ->raw($this->echoOrYield() . ' strtr(' . $function . '(');
 
             if ($hasDomain) {
                 [$domain] = $this->compileString($this->getNode('domain'));
@@ -196,7 +196,7 @@ class TransNode extends Node
             $compiler->raw("));\n");
         } else {
             $compiler
-                ->raw(self::echoOrYield() . ' ' . $function . '(');
+                ->raw($this->echoOrYield() . ' ' . $function . '(');
 
             if ($hasDomain) {
                 [$domain] = $this->compileString($this->getNode('domain'));
@@ -260,11 +260,7 @@ class TransNode extends Node
 
                     $attributeName = $n->getAttribute('name');
                     $msg .= sprintf('%%%s%%', $attributeName);
-                    if (class_exists(ContextVariable::class)) {
-                        $vars[] = new ContextVariable($attributeName, $n->getTemplateLine());
-                    } else {
-                        $vars[] = new NameExpression($attributeName, $n->getTemplateLine());
-                    }
+                    $vars[] = new NameExpression($attributeName, $n->getTemplateLine());
                 } else {
                     /** @phpstan-var TextNode $node */
                     $msg .= $node->getAttribute('data');
@@ -274,7 +270,7 @@ class TransNode extends Node
             $msg = $body->getAttribute('data');
         }
 
-        return [new I18nNode(new ConstantExpression(trim($msg), $body->getTemplateLine()), [], 0), $vars];
+        return [new Node([new ConstantExpression(trim($msg), $body->getTemplateLine())]), $vars];
     }
 
     /**
@@ -331,7 +327,7 @@ class TransNode extends Node
         return $functionPrefix . ($hasContext ? 'pgettext' : 'gettext');
     }
 
-    private static function echoOrYield(): string
+    private function echoOrYield(): string
     {
         return class_exists(YieldReady::class) ? 'yield' : 'echo';
     }

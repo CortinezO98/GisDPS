@@ -284,7 +284,6 @@ AJAX.registerOnload('table/select.js', function () {
                 $targetField.val(finalValue);
               }
               $('#rangeSearchModal').modal('hide');
-              $(this).off('click');
             });
           } else {
             Functions.ajaxShowMessage(response.error);

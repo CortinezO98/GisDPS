@@ -70,7 +70,7 @@ class IndexHint extends Component
      * @param TokensList           $list    the list of tokens that are being parsed
      * @param array<string, mixed> $options parameters for parsing
      *
-     * @return IndexHint[]
+     * @return IndexHint|Component[]
      */
     public static function parse(Parser $parser, TokensList $list, array $options = [])
     {

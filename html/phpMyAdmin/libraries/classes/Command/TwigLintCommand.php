@@ -73,7 +73,6 @@ class TwigLintCommand extends Command
             ->addOption('show-deprecations', null, InputOption::VALUE_NONE, 'Show deprecations as errors');
     }
 
-    /** @return string[] */
     protected function findFiles(string $baseFolder): array
     {
         /* Open the handle */
@@ -142,8 +141,7 @@ class TwigLintCommand extends Command
         return $this->display($output, $io, $filesInfo);
     }
 
-    /** @return array{template: string, file: string, valid: bool, line?: int, exception?: Error}[] */
-    public function getFilesInfo(string $templatesPath): array
+    protected function getFilesInfo(string $templatesPath): array
     {
         $filesInfo = [];
         $filesFound = $this->findFiles($templatesPath);
@@ -162,7 +160,6 @@ class TwigLintCommand extends Command
         return (string) file_get_contents($filePath);
     }
 
-    /** @return array{template: string, file: string, valid: bool, line?: int, exception?: Error} */
     private function validate(string $template, string $file): array
     {
         $twig = Template::getTwigEnvironment(null);
