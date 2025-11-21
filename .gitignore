@@ -1,0 +1,39 @@
+# --- LOGS Y ARCHIVOS TEMPORALES ---
+*.log
+*.tmp
+*.cache
+*.bak
+*.old
+
+# --- DIRECTORIOS TEMPORALES ---
+/cache/
+/tmp/
+/logs/
+
+# --- ARCHIVOS DE CONFIGURACIÓN LOCAL ---
+.env
+.env.local
+config.local.php
+
+# --- VENDOR (COMPOSER) ---
+/vendor/
+
+# --- NODE MODULES ---
+/node_modules/
+
+# --- ARCHIVOS DE BACKUPS ---
+*.zip
+*.tar
+*.tgz
+*.gz
+
+# --- EDITORES E IDEs ---
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# --- CARPETAS DEL PROYECTO QUE NO DEBEN SUBIRSE ---
+/phpMyAdmin/
+/phpMyAdmin_OLD*/
+/old_assets*/
