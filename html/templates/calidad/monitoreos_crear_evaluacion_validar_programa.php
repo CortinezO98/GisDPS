@@ -1,16 +1,57 @@
 <?php
-	//Validación de permisos del usuario para el módulo
-  $modulo_plataforma="Calidad-Monitoreos";
-  require_once("../../iniciador.php");
-	$id_tema = $_POST["id"];
-	$consulta = mysqli_query($enlace_db, "SELECT DISTINCT `gcmt_tipificacion` FROM `gestion_calidad_monitoreo_tipificacion` WHERE `gcmt_programa`='".$id_tema."' ORDER BY `gcmt_tipificacion` ASC");
-	$resultado = mysqli_fetch_all($consulta);
-?>
-	<option value=""></option>
-<?php
-	for ($i=0; $i < count($resultado); $i++) { 
-?>
-  <option value="<?php echo $resultado[$i][0]; ?>"><?php echo $resultado[$i][0]; ?></option>
-<?php
-	}
+// Validación de permisos del usuario para el módulo
+$modulo_plataforma = "Calidad-Monitoreos";
+require_once("../../iniciador.php");
+
+// Aceptar solo peticiones POST
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    http_response_code(405); // Método no permitido
+    exit;
+}
+
+$id_tema = isset($_POST['id']) ? trim($_POST['id']) : '';
+
+if ($id_tema === '') {
+    echo '<option value=""></option>';
+    exit;
+}
+
+
+$sql = "
+    SELECT DISTINCT `gcmt_tipificacion`
+    FROM `gestion_calidad_monitoreo_tipificacion`
+    WHERE `gcmt_programa` = ?
+    ORDER BY `gcmt_tipificacion` ASC
+";
+
+$stmt = mysqli_prepare($enlace_db, $sql);
+
+if ($stmt === false) {
+    echo '<option value=""></option>';
+    exit;
+}
+
+mysqli_stmt_bind_param($stmt, 's', $id_tema);
+
+if (!mysqli_stmt_execute($stmt)) {
+    mysqli_stmt_close($stmt);
+    echo '<option value=""></option>';
+    exit;
+}
+
+$result = mysqli_stmt_get_result($stmt);
+
+// Siempre devolvemos primero la opción vacía
+echo '<option value=""></option>' . "\n";
+
+
+if ($result) {
+    while ($row = mysqli_fetch_row($result)) {
+        $tipificacion = htmlspecialchars($row[0], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+
+        echo '<option value="' . $tipificacion . '">' . $tipificacion . '</option>' . "\n";
+    }
+}
+
+mysqli_stmt_close($stmt);
 ?>
