@@ -1,1 +1,0 @@
-<script src="<?php echo PLUGINS; ?>HighchartsGantt/code/highcharts-gantt.js"></script>
