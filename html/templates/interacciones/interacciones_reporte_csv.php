@@ -2,6 +2,7 @@
     // Validación de permisos del usuario para el módulo
     $modulo_plataforma = "Interacciones";
 
+    // En producción puedes poner display_errors en 0
     ini_set('display_errors', 0);
     ini_set('display_startup_errors', 0);
     error_reporting(E_ALL);
@@ -15,7 +16,6 @@
     require_once("../../app/config/db.php");
     require_once("../../app/config/security.php");
 
-    // Solo debe aceptar POST con el botón "reporte"
     if ($_SERVER['REQUEST_METHOD'] !== 'POST' || !isset($_POST["reporte"])) {
         http_response_code(400);
         exit('Solicitud inválida.');
@@ -54,6 +54,7 @@
         $data_consulta[] = $fecha_inicio_filtro;
         $data_consulta[] = $fecha_fin_filtro;
     }
+
 
     $consulta_string = "
         SELECT 
@@ -156,24 +157,16 @@
         exit('Error al ejecutar la consulta de datos: ' . $consulta_registros->error);
     }
 
+    // Prepara bind_result con array reutilizable
     $consulta_registros->store_result();
     $num_cols = $consulta_registros->field_count;
     $row = array_fill(0, $num_cols, null);
     $binds = array();
-
     foreach ($row as $i => &$val) {
         $binds[] = &$val;
     }
-
     call_user_func_array(array($consulta_registros, 'bind_result'), $binds);
 
-    $resultado_registros = array();
-    while ($consulta_registros->fetch()) {
-        $resultado_registros[] = array_values($row);
-    }
-
-    $consulta_registros->free_result();
-    $consulta_registros->close();
 
     $array_auxiliar = array(
         'gi_auxiliar_1'  => array('nombre' => 'Auxiliar 1'),
@@ -209,7 +202,6 @@
         }
         $resultado_aux->free();
     }
-
 
     $delimitador   = ';';
     $encapsulador  = '"';
@@ -285,70 +277,74 @@
 
     fputcsv($file, $titulos, $delimitador, $encapsulador);
 
-    // Llena datos igual que tu versión original 
-    for ($i = 0; $i < count($resultado_registros); $i++) {
-        $r = $resultado_registros[$i];
-        $municipio = $r[34] . '/' . $r[33];
+    // ==========================
+    // 5) ESCRIBIR CADA FILA DIRECTAMENTE
+    // ==========================
+    while ($consulta_registros->fetch()) {
+        // $row tiene SIEMPRE la fila actual
+        $municipio = $row[34] . '/' . $row[33];
 
         $linea = array(
-            $r[1],
-            $r[21],
-            $r[2],
-            $r[7],
-            $r[8],
-            $r[3],
-            $r[4],
-            $r[5],
-            $r[6],
-            $r[9],
-            $r[10],
+            $row[1],
+            $row[21],
+            $row[2],
+            $row[7],
+            $row[8],
+            $row[3],
+            $row[4],
+            $row[5],
+            $row[6],
+            $row[9],
+            $row[10],
             $municipio,
-            $r[15],
-            $r[13],
-            $r[12],
-            $r[14],
-            $r[41],
-            $r[27],
-            $r[28],
-            $r[29],
-            $r[30],
-            $r[31],
-            $r[32],
-            $r[16],
-            $r[17],
-            $r[18],
-            $r[19],
-            $r[20],
-            $r[22],
-            $r[42],
-            $r[43],
-            $r[44],
-            $r[45],
-            $r[24],
-            $r[26],
-            $r[25],
-            $r[23],
-            $r[35],
-            $r[36],
-            $r[37],
-            $r[38],
-            $r[39],
-            $r[40],
-            $r[46],
-            $r[47],
-            $r[48],
-            $r[49],
-            $r[50],
-            $r[51],
-            $r[52],
-            $r[53],
-            $r[54],
-            $r[55]
+            $row[15],
+            $row[13],
+            $row[12],
+            $row[14],
+            $row[41],
+            $row[27],
+            $row[28],
+            $row[29],
+            $row[30],
+            $row[31],
+            $row[32],
+            $row[16],
+            $row[17],
+            $row[18],
+            $row[19],
+            $row[20],
+            $row[22],
+            $row[42],
+            $row[43],
+            $row[44],
+            $row[45],
+            $row[24],
+            $row[26],
+            $row[25],
+            $row[23],
+            $row[35],
+            $row[36],
+            $row[37],
+            $row[38],
+            $row[39],
+            $row[40],
+            $row[46],
+            $row[47],
+            $row[48],
+            $row[49],
+            $row[50],
+            $row[51],
+            $row[52],
+            $row[53],
+            $row[54],
+            $row[55]
         );
 
         fputcsv($file, $linea, $delimitador, $encapsulador);
     }
 
+    $consulta_registros->free_result();
+    $consulta_registros->close();
     fclose($file);
 
 
