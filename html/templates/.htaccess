@@ -1,0 +1,13 @@
+DirectoryIndex login.php
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteRule ^([^\.]+)$ $1.php [NC,L]
+  RewriteRule ^([^\.]+)$ $1.html [NC,L]
+</IfModule>
+
+# Mensaje de error personalizado en ubicación local
+ErrorDocument 403 /assets/error-page/error-403.php
+ErrorDocument 404 /assets/error-page/error-404.php
+ErrorDocument 408 /assets/error-page/error-408.php
+ErrorDocument 504 /assets/error-page/error-504.php

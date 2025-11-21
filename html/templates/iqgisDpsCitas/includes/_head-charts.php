@@ -1,0 +1,1 @@
+<script src="https://code.highcharts.com/gantt/11.4.3/highcharts-gantt.js"></script>
